@@ -1,0 +1,10 @@
+.git
+.dotnet
+.nuget
+node_modules
+dist
+**/bin
+**/obj
+.DS_Store
+*.tsbuildinfo
+npm-debug.log*

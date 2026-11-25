@@ -1,0 +1,35 @@
+# Node.js and TypeScript
+node_modules/
+dist/
+.npm/
+*.tsbuildinfo
+
+# .NET build output and project-local SDK/packages
+**/bin/
+**/obj/
+.dotnet/
+.nuget/
+TestResults/
+
+# Test coverage and logs
+coverage/
+*.log
+npm-debug.log*
+
+# Local environment files; keep example configuration versioned
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Local IDE settings
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Operating system files
+.DS_Store
+Thumbs.db

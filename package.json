@@ -1,0 +1,21 @@
+{
+  "name": "nodejs-dotnet-wasm-calculator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A TypeScript Node.js calculator with C# functions running in .NET WebAssembly",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build:ts": "tsc -p tsconfig.json",
+    "build": "node scripts/copy-wasm.mjs && npm run build:ts",
+    "start": "node dist/src/cli.js",
+    "test": "node --test dist/test/*.test.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "~5.9.3"
+  }
+}
