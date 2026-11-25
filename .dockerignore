@@ -3,6 +3,7 @@
 .nuget
 node_modules
 dist
+artefacts
 **/bin
 **/obj
 .DS_Store

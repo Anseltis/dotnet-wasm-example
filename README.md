@@ -69,11 +69,17 @@ After C# changes, run `dotnet build` followed by `npm run build`. After TypeScri
 
 Install Docker and make sure its engine is running. The container build installs .NET, the WASM workloads, and Node.js inside its build stages.
 
-From the project root, where `Dockerfile` is located, build the image:
+The Dockerfile provides two targets: `runtime` for a runnable image and `artefacts` for exporting the compiled application to your filesystem. Both use the same C# and TypeScript build stages.
+
+### Runtime image
+
+From the project root, where `Dockerfile` is located, build the runtime target:
 
 ```sh
-docker build -t wasm-calculator .
+docker build --target runtime -t wasm-calculator .
 ```
+
+`runtime` is also the default target, so omitting `--target runtime` produces the same image.
 
 Start the interactive calculator:
 
@@ -96,17 +102,49 @@ To pass multiple expressions through standard input:
 printf '%s\n' 'sqrt(81)' 'factorial(5)' 'exit' | docker run --rm -i wasm-calculator
 ```
 
-After changing the application, run `docker build -t wasm-calculator .` again before starting a new container.
+After changing the application, rebuild the runtime target before starting a new container.
 
-The Dockerfile separates the build into three stages:
+### Artefact export
 
-| Stage | Image | Commands |
+Export the compiled application into the local `artefacts` directory:
+
+```sh
+docker build --target artefacts --output type=local,dest=./artefacts .
+```
+
+The exported files have this layout:
+
+```text
+artefacts/
+├── package.json
+├── package-lock.json
+└── dist/
+    ├── package.json
+    ├── src/
+    └── wasm/
+```
+
+The export includes the compiled application and WASM assets. Development tools, tests, and `node_modules` are excluded. With Node.js 22 or later installed, run it directly:
+
+```sh
+cd artefacts
+npm install --omit=dev
+npm start -- "sqrt(81) + 2 * 3"
+# 15
+```
+
+Use `npm start` without an expression for an interactive session. Re-run the export command after changing the application.
+
+### Build stages and targets
+
+| Stage or target | Image | Role |
 | --- | --- | --- |
-| C# build | `mcr.microsoft.com/dotnet/sdk:10.0` | Install WASM workloads, `dotnet restore`, `dotnet build --configuration Release --no-restore` |
-| TypeScript build | `node:24-bookworm` | `npm install`, `npm run build`, `npm test` |
-| Runtime | `node:24-bookworm-slim` | `npm install --omit=dev`, then `npm start` |
+| `dotnet-build` | `mcr.microsoft.com/dotnet/sdk:10.0` | Install WASM workloads, restore dependencies, and build C# in Release mode |
+| `node-build` | `node:24-bookworm` | Install development dependencies, compile TypeScript, and run tests |
+| `artefacts` | `scratch` | Export package manifests and the compiled `dist` files |
+| `runtime` | `node:24-bookworm-slim` | Install production dependencies and run the same compiled application |
 
-These use the official [Microsoft .NET SDK image](https://github.com/dotnet/dotnet-docker/blob/main/README.sdk.md) and [Node.js images](https://hub.docker.com/_/node). `--omit=dev` installs production dependencies only. The final image contains the compiled application and WASM assets, owned by the `node` user that runs them. The build runs a calculator expression as that user to verify the packaged WASM loads. `.dockerignore` excludes the local SDK, dependencies, and build output from the build context.
+These use the official [Microsoft .NET SDK image](https://github.com/dotnet/dotnet-docker/blob/main/README.sdk.md) and [Node.js images](https://hub.docker.com/_/node). `--omit=dev` installs production dependencies only. The runtime image owns its application files as the `node` user, and runs a calculator expression as that user during the build to verify the packaged WASM loads. `.dockerignore` excludes the local SDK, dependencies, build output, and exported artefacts from the build context.
 
 ## Run
 

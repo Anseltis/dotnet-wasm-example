@@ -1,6 +1,7 @@
 # Node.js and TypeScript
 node_modules/
 dist/
+artefacts/
 .npm/
 *.tsbuildinfo
 

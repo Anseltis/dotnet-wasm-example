@@ -28,18 +28,26 @@ ENV DOTNET_CONFIGURATION=Release
 RUN npm run build
 RUN npm test
 
-# Stage 3: install production dependencies and run the built application.
+# Generated .NET boot files can be owner-readable only (0600).
+# Make the exported application readable by its eventual deployment user.
+RUN chmod -R a+rX dist package.json package-lock.json
+
+# Export target: application files only, suitable for --output type=local.
+FROM scratch AS artefacts
+COPY --from=node-build /app/package.json /app/package-lock.json /
+COPY --from=node-build /app/dist/package.json /dist/package.json
+COPY --from=node-build /app/dist/src/ /dist/src/
+COPY --from=node-build /app/dist/wasm/ /dist/wasm/
+
+# Runtime target (default): install production dependencies and run the app.
 FROM node:24-bookworm-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
-COPY package.json package-lock.json ./
+COPY --from=artefacts /package.json /package-lock.json ./
 RUN npm install --omit=dev
 
-# Generated .NET boot files can be owner-readable only (0600).
-COPY --from=node-build --chown=node:node /app/dist/package.json ./dist/package.json
-COPY --from=node-build --chown=node:node /app/dist/src/ ./dist/src/
-COPY --from=node-build --chown=node:node /app/dist/wasm/ ./dist/wasm/
+COPY --from=artefacts --chown=node:node /dist/ ./dist/
 
 USER node
 RUN node dist/src/cli.js "sqrt(81) + 2 * 3"
